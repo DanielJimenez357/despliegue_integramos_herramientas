@@ -18,30 +18,21 @@ resource "aws_instance" "web" {
   subnet_id                   = aws_subnet.subnetPublica.id
   associate_public_ip_address = true
   security_groups             = [aws_security_group.grupo_seguridad.id]
-  key_name                    = aws_key_pair.claves.key_name
+  key_name                    = "clave"
   user_data = <<-EOF
             #!/bin/bash
-            yum update -y
-            yum install -y httpd
-            systemctl start httpd
-            systemctl enable httpd
-            echo "<html><body><h1>¡Bienvenido a mi servidor web con Terraform!</h1></body></html>" > /var/www/html/index.html
+            apt-get update
+            apt-get install -y ca-certificates curl gnupg
+            install -m 0755 -d /etc/apt/keyrings
+            curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+            chmod a+r /etc/apt/keyrings/docker.gpg
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+            apt-get update
+            apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+            systemctl start docker
+            systemctl enable docker
+            docker run -d -p 8080:8080 -p 50000:50000 --restart=on-failure jenkins/jenkins:lts-jdk17
             EOF
-}
-
-resource "tls_private_key" "mi_clave" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
-
-resource "aws_key_pair" "claves" {
-  key_name   = "clave"
-  public_key = tls_private_key.mi_clave.public_key_openssh
-}
-
-resource "local_file" "clave_privada" {
-  content  = tls_private_key.mi_clave.private_key_pem
-  filename = "clave"
 }
 
 output "public_ip" {
@@ -56,6 +47,20 @@ resource "aws_security_group" "grupo_seguridad" {
   ingress {
     from_port   = 80
     to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 8080
+    to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
