@@ -31,7 +31,11 @@ resource "aws_instance" "web" {
             apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
             systemctl start docker
             systemctl enable docker
-            docker run -d -p 8080:8080 -p 50000:50000 --restart=on-failure jenkins/jenkins:lts-jdk17
+            docker run -d -p 80:8080 -p 50000:50000 --restart=on-failure jenkins/jenkins:lts-jdk17
+
+            sleep 30
+
+            docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword >> /var/log/cloud-init-output.log
             EOF
 }
 
