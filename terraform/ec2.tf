@@ -32,10 +32,6 @@ resource "aws_instance" "web" {
             systemctl start docker
             systemctl enable docker
             docker run -d -p 80:8080 -p 50000:50000 --restart=on-failure jenkins/jenkins:lts-jdk17
-
-            sleep 30
-
-            docker exec jenkins cat /var/jenkins_home/secrets/initialAdminPassword >> /var/log/cloud-init-output.log
             EOF
 }
 
